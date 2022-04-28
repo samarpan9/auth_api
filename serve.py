@@ -1,6 +1,6 @@
 import hashlib
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, redirect, render_template, request , jsonify, make_response, session
+from flask import Flask, redirect, render_template, request , jsonify, make_response, request_started, session
 from sqlalchemy import Column, Integer, String
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
@@ -35,16 +35,17 @@ def token_required(f):
     def decorated(*args, **kwargs):
         token = None
         
+        print("****")
+        print(request.headers)
         if 'x-access-tokens' in request.headers:
             token = request.headers['x-access-tokens']
+        print("token sam", token)
 
         if token is None:
             return jsonify({'message' : 'Token is missing!'}), 401
         try:
             print("hello")
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            print("current user")
-
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             current_user = User.query.filter_by(public_id=data['public_id']).first()
             print("current user")
             print(current_user)
@@ -71,10 +72,12 @@ def users_post():
         return render_template("login.html", message = message)
          
     if user.password == hashed_password:
-        print(user.public_id)
-        token = jwt.encode({'public_id' : user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, 
+        token = jwt.encode({'public_id' : user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=120)}, 
         app.config['SECRET_KEY'])
+
         print("token is:", token)
+        print(request.headers)
+        return redirect("/dashboard")
     return render_template("login.html")
 
 @app.route('/register')
@@ -83,7 +86,7 @@ def user_create():
 
 @app.route('/dashboard')
 @token_required
-def dashboard():
+def dashboard(current_user):
     return render_template("dashboard.html")
 
 

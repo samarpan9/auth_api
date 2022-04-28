@@ -12,8 +12,8 @@ def init_db():
 def createseed():
     data={
         'email': "samarpan020@gmail.com",
-        'password': hashlib.sha256("test@123".encode('utf-8')).hexdigest(),
-        'name' : "samarpan Dhungana",
+        'password': hashlib.sha256("123".encode('utf-8')).hexdigest(),
+        'name' : "admin",
         'public_id':str(uuid.uuid4())
     }
     users = User(**data)
