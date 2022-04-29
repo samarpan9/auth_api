@@ -1,17 +1,17 @@
 import hashlib
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, redirect, render_template, request , jsonify, make_response, request_started, session
+from flask import Flask, redirect, render_template, request , jsonify, make_response
 from sqlalchemy import Column, Integer, String
-from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 import datetime
 from functools import wraps
 from config import *
+import uuid
 
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'thisissecret'
+app.config['SECRET_KEY'] = 'c26f180cc68f419f89cf4c76f3fd346e'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -34,21 +34,16 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = None
-        
-        print("****")
-        print(request.headers)
-        if 'x-access-tokens' in request.headers:
-            token = request.headers['x-access-tokens']
-        print("token sam", token)
+        token_value = request.cookies.get('token')
+
+        if token_value:
+            token = token_value
 
         if token is None:
             return jsonify({'message' : 'Token is missing!'}), 401
         try:
-            print("hello")
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
             current_user = User.query.filter_by(public_id=data['public_id']).first()
-            print("current user")
-            print(current_user)
         except: 
             return jsonify({'message' : 'Token is invalid!'}), 401
         return f(current_user, *args, **kwargs)
@@ -66,7 +61,7 @@ def users_post():
     hashed_password=hashlib.sha256(password.encode('utf-8')).hexdigest()
     user = User.query.filter_by(email = email).first()
 
-    print("this is user",user)
+
     if not user:
         message = "Invalid Credentials"
         return render_template("login.html", message = message)
@@ -75,19 +70,39 @@ def users_post():
         token = jwt.encode({'public_id' : user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=120)}, 
         app.config['SECRET_KEY'])
 
-        print("token is:", token)
-        print(request.headers)
-        return redirect("/dashboard")
-    return render_template("login.html")
+        resp = make_response(redirect("/dashboard"))
+        resp.set_cookie('token', token)
+        
+        return resp
+    else:
+        message = "Password did not match"
+        return render_template("login.html", message = message)
 
 @app.route('/register')
 def user_create():
     return render_template("register.html")
 
+@app.route('/register', methods = ["POST"])
+def user_create_post():
+    unhashed_password = request.form['password']
+    data = {
+        'name' : request.form['name'],
+        'email' : request.form['email'],
+        'location' : request.form['location'],
+        'public_id' : str(uuid.uuid4()),
+        'password' :  hashlib.sha256(unhashed_password.encode('utf-8')).hexdigest()
+    }
+    users = User(**data)
+    db.session.add(users)
+    db.session.commit()
+    
+
+    return render_template("register.html")
+
 @app.route('/dashboard')
 @token_required
 def dashboard(current_user):
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", current_user = current_user)
 
 
 

@@ -8,11 +8,11 @@
 </head>
 <body>
     <h2>Register page</h2>
-    <form action="">
-        <input type="text" placeholder="enter your name"><br><br>
-        <input type="email" placeholder="enter your email"><br><br>
-        <input type="location" placeholder="your location"><br><br>
-        <input type="password" placeholder="password"><br><br>
+    <form aaction = "{{ action }}" method = "POST">
+        <input type="text" placeholder="enter your name" name="name" required><br><br>
+        <input type="email" placeholder="enter your email" name="email" required><br><br>
+        <input type="location" placeholder="your location" name="location" required><br><br>
+        <input type="password" placeholder="password" name="password" required><br><br>
         <button type="submit">register</button>
     </form>
 </body>

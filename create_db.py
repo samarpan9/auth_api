@@ -9,17 +9,4 @@ def init_db():
         db.drop_all()
         db.create_all()
 
-def createseed():
-    data={
-        'email': "samarpan020@gmail.com",
-        'password': hashlib.sha256("123".encode('utf-8')).hexdigest(),
-        'name' : "admin",
-        'public_id':str(uuid.uuid4())
-    }
-    users = User(**data)
-    db.session.add(users)
-    db.session.commit()
-
-
 init_db()
-createseed()
